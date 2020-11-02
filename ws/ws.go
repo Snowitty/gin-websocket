@@ -116,4 +116,19 @@ func (c *Client) Write(){
 func WsHandler(c *gin.Context){
     uid := c.Query("uid")
     touid := c.Query("to_uid")
+    conn, err := (&websocket.Upgrader{CheckOrigin: func(r *http.Request) bool {return true}}).Upgrade(c.Writer, c.Request, nil)
+    if err != nil{
+        http.NotFound(c.Writer, c.Request)
+        return
+    }
+
+    client := &Client{
+        ID:  creatId(uid, touid),
+        Socket:  conn,
+        Send: make(chan []byte),
+    }
+
+    Manager.Register <- client
+    go client.Read()
+    go client.Write()
 }
